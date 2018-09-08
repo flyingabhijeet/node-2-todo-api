@@ -6,12 +6,14 @@ MongoClient.connect('mongodb://localhost:27017/TodoApp',(error,db)=>{
     }
     console.log('Connected to database!')
 
-    db.collection('Todo').find({_id:new ObjectID('5b93b2e41732b9730643a3cc')}).toArray((error,results)=>{
-        if(error){
-            return console.log('Cannot find result!');
+    db.collection('Users').findOneAndUpdate(
+        {Name:'Arushi'},
+        {$set:{Name:'Abhijeet'},$inc:{Age:1}},
+        {returnOrignal:false, upsert:true},
+        (error,result)=> {
+            console.log('Data Updated!', result)
         }
-        console.log(JSON.stringify(results,undefined,2));
-    });
+    )
     
     db.close();
 })
