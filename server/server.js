@@ -5,6 +5,7 @@ var {mongoose} = require('./db/mongoose');
 var {TodoModel} = require('./modals/todoModal');
 var {UserModel} = require('./modals/userModal');
 var {ObjectID} = require('mongodb');
+var _ = require('lodash');
 
 var app = express();
 const port = process.env.PORT || 3000;
@@ -20,6 +21,7 @@ app.post('/todos',(request,response)=>{
     newTodo.save().then((docs)=>{
         console.log('Saved Data!',docs);
         response.status(200).send(docs);
+        console.log('BodyParser check:',request.body.completed);
     },(error)=>{
         console.log('Error Occured!!',error);
         response.status(400).send(error);
@@ -62,8 +64,34 @@ app.delete('/todos/:id',(request,response)=>{
 
         response.send(doc);
     },(error)=>{
-        response.status(404).send('Bad Request, No Such Data present')
+        response.status(404).send('Bad Request, No Such Todo present')
     })
+});
+
+app.patch('/todos/:id',(request,response)=>{
+    var id = request.params.id;
+    if(!ObjectID.isValid(id)){
+        return response.status(400).send('Invalid ObjectId');
+    }
+    var body = _.pick(request.body,['text','completed']);
+    console.log(body);
+    if( _.isBoolean(body.completed) && body.completed ){
+        body.completedAt = Date.now();
+    }else{
+        response.status(400).send('Pass Valid Data');
+        body.completed = false;
+        body.completedAt = null;
+    }
+
+TodoModel.findByIdAndUpdate(id,{$set:body}).then((doc)=>{
+        if(!doc){
+            return response.status(404).send('No Todo with such id');
+        }
+        response.status(200).send({doc});
+    },(error)=>{
+        response.send(400).send('Error Updating Todo!');
+    });
+    console.log(body);
 });
 
 app.listen(port,()=>{
