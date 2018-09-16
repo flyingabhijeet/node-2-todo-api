@@ -4,15 +4,18 @@ const bodyParser = require('body-parser');
 var {mongoose} = require('./db/mongoose');
 var {TodoModel} = require('./modals/todoModal');
 var {UserModel} = require('./modals/userModal');
+var {ObjectID} = require('mongodb');
 
 var app = express();
+const port = process.env.PORT || 3000;
 
-// app.use(bodyParser.json());
+app.use(bodyParser.json());
 
 app.post('/todos',(request,response)=>{
     console.log(request.body);
     var newTodo = new TodoModel({
         text: request.body.text
+        //passing json via bodyParser and putting it in body
     });
     newTodo.save().then((docs)=>{
         console.log('Saved Data!',docs);
@@ -46,6 +49,23 @@ app.get('/todos/:id',(request,response)=>{
     }).catch((e)=>{reponse.send(e)})
 });
 
-app.listen(3000,()=>{
-    console.log('Server Up!');
+app.delete('/todos/:id',(request,response)=>{
+    var id = request.params.id;
+
+    if(!ObjectID.isValid(id)){
+        return response.status(400).send('Invalid Id');
+    }
+
+    TodoModel.findByIdAndRemove(id).then((doc)=>{
+        if(!doc)
+        return response.status(404).send('No Doc Found with such id!');
+
+        response.send(doc);
+    },(error)=>{
+        response.status(404).send('Bad Request, No Such Data present')
+    })
+});
+
+app.listen(port,()=>{
+    console.log(`Server on on the port ${port}`);
 });
