@@ -7,7 +7,7 @@ var {UserModel} = require('./modals/userModal');
 
 var app = express();
 
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 
 app.post('/todos',(request,response)=>{
     console.log(request.body);
@@ -30,9 +30,21 @@ app.get('/todos',(request,response)=>{
     },(error)=>{
         response.status(400).send("Cannot Fetch Data!");
     })
-})
+});
 
-app.get('/todos/:id')
+app.get('/todos/:id',(request,response)=>{
+    var id = request.params.id;
+    TodoModel.findById(id).then((doc)=>{
+        if(!doc){
+            return response.status(404).send('No Such Todo!');
+        }
+        response.send(doc);
+    },(error)=>{
+        response.status(400).send(error);
+        console.log(error);
+        
+    }).catch((e)=>{reponse.send(e)})
+});
 
 app.listen(3000,()=>{
     console.log('Server Up!');
