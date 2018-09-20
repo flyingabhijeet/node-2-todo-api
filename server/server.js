@@ -5,6 +5,7 @@ var {mongoose} = require('./db/mongoose');
 var {TodoModel} = require('./modals/todoModal');
 var {UserModel} = require('./modals/userModal');
 var {ObjectID} = require('mongodb');
+var {authenticate} = require('./../middleware/authenticate.js');
 var _ = require('lodash');
 
 var app = express();
@@ -92,6 +93,31 @@ TodoModel.findByIdAndUpdate(id,{$set:body}).then((doc)=>{
         response.send(400).send('Error Updating Todo!');
     });
     console.log(body);
+});
+
+app.post('/users',(request,response)=>{
+    // var body = _.pick(request.body,['email','password']);
+    // var newUser = new UserModel(body);
+    var newUser = new UserModel({
+        email:request.body.email,
+        password:request.body.password
+    })
+    newUser.save().then(()=>{
+        // console.log('User Registerd!');
+        // response.send(user)
+        return newUser.generateAuthToken();
+    }).then((token_recieved)=>{
+        response.header('x-auth',token_recieved).send(newUser);
+        console.log('token is',token_recieved);
+    }).catch((error)=>{
+        console.log('Error registering user!',error);
+        response.status(400).send(error);
+    });
+});
+
+
+app.get('/users/me',authenticate,(request,response)=>{
+    response.send(request.user);
 });
 
 app.listen(port,()=>{
