@@ -13,10 +13,12 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-app.post('/todos',(request,response)=>{
+app.post('/todos',authenticate,(request,response)=>{
+
     console.log(request.body);
     var newTodo = new TodoModel({
-        text: request.body.text
+        text: request.body.text,
+        creator:request.user._id
         //passing json via bodyParser and putting it in body
     });
     newTodo.save().then((docs)=>{
@@ -30,17 +32,17 @@ app.post('/todos',(request,response)=>{
     })
 });
 
-app.get('/todos',(request,response)=>{
-    TodoModel.find().then((docs)=>{
-        response.send({docs});
+app.get('/todos',authenticate,(request,response)=>{
+    TodoModel.findOne({creator:request.user._id}).then((Todos)=>{
+        response.send({Todos});
     },(error)=>{
         response.status(400).send("Cannot Fetch Data!");
     })
 });
 
-app.get('/todos/:id',(request,response)=>{
+app.get('/todos/:id',authenticate,(request,response)=>{
     var id = request.params.id;
-    TodoModel.findById(id).then((doc)=>{
+    TodoModel.fineOne({_id:id,creator:request.user._id}).then((doc)=>{
         if(!doc){
             return response.status(404).send('No Such Todo!');
         }
@@ -59,7 +61,7 @@ app.delete('/todos/:id',(request,response)=>{
         return response.status(400).send('Invalid Id');
     }
 
-    TodoModel.findByIdAndRemove(id).then((doc)=>{
+    TodoModel.findOneAndRemove({_id:id,creator:request.user._id}).then((doc)=>{
         if(!doc)
         return response.status(404).send('No Doc Found with such id!');
 
@@ -84,7 +86,7 @@ app.patch('/todos/:id',(request,response)=>{
         body.completedAt = null;
     }
 
-TodoModel.findByIdAndUpdate(id,{$set:body}).then((doc)=>{
+TodoModel.findOneAndUpdate({_id:id,creator:request.user._id},{$set:body}).then((doc)=>{
         if(!doc){
             return response.status(404).send('No Todo with such id');
         }
