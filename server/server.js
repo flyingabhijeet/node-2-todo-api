@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-
+const bcrypt = require('bcryptjs');
 var {mongoose} = require('./db/mongoose');
 var {TodoModel} = require('./modals/todoModal');
 var {UserModel} = require('./modals/userModal');
@@ -115,6 +115,56 @@ app.post('/users',(request,response)=>{
     });
 });
 
+// app.post('/users/login',(request,response)=>{
+//     // var getUser = new UserModel({
+
+//     // })
+//     var entered_mail = request.body.email;
+//     var entered_password = request.body.password;
+//     var hashedpwd;
+//     var userFetched;
+//     // console.log(entered_mail);
+//     UserModel.findOne({email:entered_mail}).then((user)=>{
+//         hashedpwd = user.password;
+//         bcrypt.compare(entered_password,hashedpwd,(error,result)=>{
+//             console.log(result);
+//             if(!result){
+//               return  response.status(400).send()
+//             }
+//             response.status(200).send(user);
+       
+//         });
+//     }).catch((e)=>{
+//         hashedpwd = null;
+//     });
+
+// });
+
+app.post('/users/login',(request,response)=>{
+    var body = _.pick(request.body,['email','password']);
+    UserModel.findByCredentials(body.email,body.password).then((user)=>{
+        if(!user){
+            return response.status(400).send();
+        }
+        console.log(`User found is ---> ${user}`);
+        user.generateAuthToken().then((token_recieved)=>{
+            response.header('x-auth',token_recieved).send(user);
+        });
+    }).catch((e)=>{
+        response.status(400).send();
+        console.log(e);
+    })
+});
+
+app.delete('/users/me/token',authenticate,(request,response)=>{
+    (request.user).removeToken(request.token).then(()=>{
+        response.status(200).send('Sucessfully Logged Out!')
+    },()=>{
+        response.status(404).send();
+    }).catch((e)=>{
+        response.status(400).send(e);
+    })
+});
 
 app.get('/users/me',authenticate,(request,response)=>{
     response.send(request.user);
